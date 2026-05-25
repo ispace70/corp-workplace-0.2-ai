@@ -13,9 +13,23 @@ echo "======================================"
 echo "  Corp Workplace AI — Starting"
 echo "======================================"
 
+# 포트가 비어있는지 확인 후 대기
+wait_port_free() {
+    local port="$1"
+    for i in $(seq 1 10); do
+        if ! lsof -ti tcp:"$port" > /dev/null 2>&1; then
+            return 0
+        fi
+        sleep 0.5
+    done
+    echo "  [경고] 포트 $port 가 아직 사용 중입니다."
+}
+
 # ── 백엔드 ──────────────────────────────────
 echo ""
 echo "[1/3] 백엔드 시작 (FastAPI port 8009)..."
+
+wait_port_free 8009
 
 # 가상환경 활성화
 if [ -f "$ROOT_DIR/.venv/bin/activate" ]; then
@@ -47,6 +61,8 @@ done
 echo ""
 echo "[2/3] 프론트엔드 시작 (Next.js port 3000)..."
 
+wait_port_free 3000
+
 cd "$ROOT_DIR/frontend"
 
 if [ ! -d "node_modules" ]; then
@@ -59,10 +75,25 @@ FRONTEND_PID=$!
 echo $FRONTEND_PID > "$FRONTEND_PID_FILE"
 echo "      PID: $FRONTEND_PID  |  로그: .tmp/logs/frontend.log"
 
+# 프론트엔드 준비 대기 (최대 15초)
+echo -n "      대기..."
+for i in $(seq 1 15); do
+    sleep 1
+    if curl -s http://localhost:3000 > /dev/null 2>&1; then
+        echo " OK"
+        break
+    fi
+    echo -n "."
+    if [ "$i" -eq 15 ]; then
+        echo " TIMEOUT (프론트엔드가 아직 시작 중일 수 있습니다)"
+    fi
+done
 
 # ── 어드민 ───────────────────────────────────
 echo ""
 echo "[3/3] 어드민 시작 (React+Vite port 8002)..."
+
+wait_port_free 8002
 
 cd "$ROOT_DIR/admin/frontend"
 
