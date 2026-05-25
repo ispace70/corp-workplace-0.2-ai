@@ -1,0 +1,40 @@
+# SQL Few-Shot 예시
+# 형식: question(질문) + sql(정답 쿼리) + tags(선택, 유사도 매칭용 키워드)
+# 예시를 추가하면 SQL 생성 정확도가 향상됩니다.
+
+examples:
+  - question: "가입 완료된 가맹점 수를 알려줘"
+    sql: |
+      SELECT COUNT(*) AS 가입완료_가맹점수
+      FROM fcs_frcs_b
+      WHERE FRCS_STTS_CD = '003'
+    tags: [가맹점, 가입완료, 수]
+
+  - question: "일별 가맹점 결제 현황을 보여줘"
+    sql: |
+      SELECT
+        b.dlng_ymd, 
+        a.frcs_id,
+        a.frcs_nm,
+        sum(b.dlng_amt)
+      FROM fcs_frcs_b a
+      JOIN ppm_dlng_b b
+        ON a.FRCS_ID = b.FRCS_ID
+      where b.dlng_se_cd like 'I%'
+      GROUP BY b.dlng_ymd, a.frcs_id, a.frcs_nm
+      ORDER BY b.dlng_ymd desc
+    tags: [가맹점, 결제, 일별, 통계]
+
+  - question: "여성 회원 수를 알려줘"
+    sql: |
+      SELECT COUNT(*) AS 여성회원수
+      FROM MBR_MBR_B
+      WHERE MBR_SEX_CD = 'F'
+    tags: [회원, 여성, 수]
+
+  - question: "최근 한 달 신규 가입 회원 수"
+    sql: |
+      SELECT COUNT(*) AS 신규가입회원수
+      FROM MBR_MBR_B
+      WHERE JOIN_DT >= DATE_TRUNC('month', CURRENT_DATE)
+    tags: [회원, 신규, 가입, 최근]

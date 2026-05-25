@@ -1,0 +1,252 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ── 프리미엄 테마 시스템 정의 ─────────────────────────────────────────── */
+/* 각 테마별 색상 스키마와 글래스모피즘 투명도 변수 정의 */
+
+:root {
+  /* nanoBanana (개선된 프리미엄 딥 바이올렛 & 네온 다크 테마) */
+  --bg-primary: #080810;          /* 더 깊고 신비로운 암청색 배경 */
+  --bg-secondary: #0f0f1c;        /* 사이드바 및 레이아웃용 서브 배경 */
+  --bg-card: rgba(20, 20, 38, 0.55); /* 글래스모피즘 효과용 반투명 카드 */
+  --bg-card-hover: rgba(30, 30, 58, 0.75);
+  --border-color: rgba(139, 92, 246, 0.12); /* 미세한 바이올렛 보더 */
+  --border-accent: rgba(139, 92, 246, 0.45); /* 활성화된 네온 바이올렛 보더 */
+  --text-primary: #f3f4f6;
+  --text-secondary: #9ca3af;
+  --text-muted: #4b5563;
+  --accent: #a78bfa;               /* 메인 포인트 컬러: 네온 바이올렛 */
+  --accent-glow: rgba(167, 139, 250, 0.28);
+  --accent-dim: rgba(167, 139, 250, 0.08);
+  --user-bubble: rgba(167, 139, 250, 0.14); /* 사용자 말풍선 배경 */
+  --ai-bubble: rgba(20, 20, 38, 0.85);      /* AI 말풍선 배경 */
+  --scrollbar-thumb: rgba(167, 139, 250, 0.18);
+  --scrollbar-track: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] {
+  /* 스탠다드 다크 테마 (오션 스틸 앤 네온 블루) */
+  --bg-primary: #0b0f19;
+  --bg-secondary: #131a26;
+  --bg-card: rgba(19, 26, 38, 0.65);
+  --bg-card-hover: rgba(30, 41, 59, 0.85);
+  --border-color: rgba(56, 189, 248, 0.15); /* 스카이 블루 보더 */
+  --border-accent: rgba(56, 189, 248, 0.5);
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --accent: #38bdf8;               /* 메인 포인트: 스카이 블루 */
+  --accent-glow: rgba(56, 189, 248, 0.25);
+  --accent-dim: rgba(56, 189, 248, 0.06);
+  --user-bubble: rgba(56, 189, 248, 0.12);
+  --ai-bubble: rgba(19, 26, 38, 0.9);
+}
+
+[data-theme="white"] {
+  /* 스탠다드 라이트 테마 (모던 미니멀 화이트 & 오피스 블루) */
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: rgba(255, 255, 255, 0.8);
+  --bg-card-hover: rgba(241, 245, 249, 0.95);
+  --border-color: rgba(15, 23, 42, 0.08);
+  --border-accent: rgba(37, 99, 235, 0.45);
+  --text-primary: #0f172a;
+  --text-secondary: #475569;
+  --accent: #2563eb;               /* 메인 포인트: 사파이어 블루 */
+  --accent-glow: rgba(37, 99, 235, 0.15);
+  --accent-dim: rgba(37, 99, 235, 0.05);
+  --user-bubble: rgba(37, 99, 235, 0.07);
+  --ai-bubble: #ffffff;
+}
+
+/* ── Base ──────────────────────────────────────────────────────────────────── */
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html,
+body {
+  height: 100%;
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: "Inter", "Noto Sans KR", -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  line-height: 1.6;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--scrollbar-thumb, rgba(255,193,7,0.2));
+  border-radius: 3px;
+}
+
+/* ── Glass card ────────────────────────────────────────────────────────────── */
+.glass {
+  background: var(--bg-card);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid var(--border-color);
+}
+
+.glass-hover:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-accent);
+}
+
+/* ── Accent glow button ────────────────────────────────────────────────────── */
+.btn-accent {
+  background: var(--accent);
+  color: #0a0a0f;
+  font-weight: 600;
+  border-radius: 8px;
+  padding: 8px 16px;
+  transition: all 0.2s;
+  box-shadow: 0 0 16px var(--accent-glow);
+}
+.btn-accent:hover {
+  box-shadow: 0 0 24px var(--accent-glow);
+  filter: brightness(1.1);
+}
+
+/* ── Typing indicator ──────────────────────────────────────────────────────── */
+.typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: bounce 1.2s ease-in-out infinite;
+}
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-6px); }
+}
+
+/* ── Markdown content ──────────────────────────────────────────────────────── */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  color: var(--accent);
+  margin: 0.75em 0 0.4em;
+  font-weight: 700;
+}
+.markdown-body p { margin: 0.4em 0; }
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.4em;
+  margin: 0.4em 0;
+}
+.markdown-body code {
+  background: rgba(255, 193, 7, 0.08);
+  border: 1px solid rgba(255, 193, 7, 0.15);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12px;
+  font-family: "JetBrains Mono", "Fira Code", monospace;
+}
+.markdown-body pre {
+  background: rgba(0, 0, 0, 0.4) !important;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  overflow-x: auto;
+  margin: 0.6em 0;
+}
+.markdown-body pre code {
+  background: none;
+  border: none;
+  padding: 0;
+}
+.markdown-body strong { color: var(--text-primary); font-weight: 700; }
+.markdown-body blockquote {
+  border-left: 3px solid var(--accent);
+  padding-left: 12px;
+  color: var(--text-secondary);
+  margin: 0.5em 0;
+}
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  font-size: 13px;
+}
+.markdown-body th {
+  background: var(--accent-dim);
+  border: 1px solid var(--border-color);
+  padding: 6px 10px;
+  text-align: left;
+  color: var(--accent);
+  font-weight: 600;
+}
+.markdown-body td {
+  border: 1px solid var(--border-color);
+  padding: 5px 10px;
+}
+.markdown-body tr:nth-child(even) td {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+/* ── Route badge ───────────────────────────────────────────────────────────── */
+.route-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+.route-knowledge {
+  background: rgba(139, 92, 246, 0.15);
+  color: #a78bfa;
+  border: 1px solid rgba(139, 92, 246, 0.3);
+}
+.route-sql {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border: 1px solid rgba(16, 185, 129, 0.25);
+}
+.route-general {
+  background: rgba(255, 193, 7, 0.1);
+  color: var(--accent);
+  border: 1px solid rgba(255, 193, 7, 0.2);
+}
+
+/* ── SQL result table ──────────────────────────────────────────────────────── */
+.sql-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  font-family: "JetBrains Mono", monospace;
+}
+.sql-table th {
+  background: var(--accent-dim);
+  color: var(--accent);
+  border: 1px solid var(--border-color);
+  padding: 6px 10px;
+  text-align: left;
+  white-space: nowrap;
+}
+.sql-table td {
+  border: 1px solid var(--border-color);
+  padding: 5px 10px;
+  color: var(--text-primary);
+}
+.sql-table tr:hover td {
+  background: rgba(255, 193, 7, 0.04);
+}
