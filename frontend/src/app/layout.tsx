@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Corp Workplace AI",
-  description: "기업 내부 AI 워크플레이스 — 지식검색 & 데이터분석",
+  title: "PIZA(기업용 워크플레이스)",
+  description: "기업용 AI 워크플레이스 — 지식검색 & 데이터분석",
 };
 
 const VALID_THEMES = ["nanoBanana", "dark", "white"] as const;

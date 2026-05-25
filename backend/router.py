@@ -104,6 +104,19 @@ async def health():
     return {"status": "ok", "version": "1.0.0"}
 
 
+@api_router.get("/llm-status")
+async def llm_status():
+    import httpx
+    url = os.getenv("GCP_LLM_URL", "http://localhost:8001")
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            r = await client.get(f"{url}/health")
+            connected = r.status_code < 500
+    except Exception:
+        connected = False
+    return {"connected": connected, "provider": "GCP VM", "url": url}
+
+
 @api_router.get("/db/tables")
 async def db_tables():
     return {"tables": get_tables()}

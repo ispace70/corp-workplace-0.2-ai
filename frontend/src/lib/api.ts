@@ -112,3 +112,12 @@ export async function checkHealth() {
     return false;
   }
 }
+
+export async function fetchLLMStatus(): Promise<{ connected: boolean; provider: string }> {
+  try {
+    const res = await fetch(`${API_URL}/llm-status`, { cache: "no-store" });
+    return await res.json();
+  } catch {
+    return { connected: false, provider: "GCP VM" };
+  }
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutDashboard,
@@ -10,8 +10,11 @@ import {
   ChevronRight,
   Bot,
   Zap,
+  WifiOff,
+  Loader2,
 } from "lucide-react";
 import { RouteMode } from "@/types";
+import { fetchLLMStatus } from "@/lib/api";
 
 /**
  * 네비게이션 메뉴 아이템 정의 인터페이스
@@ -60,9 +63,21 @@ interface SidebarProps {
  * 어플리케이션의 좌측 네비게이션을 담당하며, 축소/확장(Collapse) 애니메이션 및 
  * 현재 연결 상태(GCP LLM)를 시각적으로 보여주는 역할을 합니다.
  */
+type LLMStatus = "checking" | "connected" | "disconnected";
+
 export default function Sidebar({ activeMode, onModeChange }: SidebarProps) {
-  // 사이드바의 접힘/펼침 상태 관리
   const [collapsed, setCollapsed] = useState(false);
+  const [llmStatus, setLLMStatus] = useState<LLMStatus>("checking");
+
+  useEffect(() => {
+    const check = async () => {
+      const { connected } = await fetchLLMStatus();
+      setLLMStatus(connected ? "connected" : "disconnected");
+    };
+    check();
+    const interval = setInterval(check, 30_000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <motion.aside
@@ -96,10 +111,10 @@ export default function Sidebar({ activeMode, onModeChange }: SidebarProps) {
               className="overflow-hidden whitespace-nowrap"
             >
               <p className="font-extrabold text-sm tracking-tight" style={{ color: "var(--accent)" }}>
-                Corp Workplace
+                기업용 워크플레이스
               </p>
               <p className="text-[10px] uppercase font-bold tracking-wider" style={{ color: "var(--text-secondary)" }}>
-                AI Agent Platform
+                Enterprise AI Agent Platform
               </p>
             </motion.div>
           )}
@@ -166,13 +181,40 @@ export default function Sidebar({ activeMode, onModeChange }: SidebarProps) {
               exit={{ opacity: 0, y: 10 }}
               className="flex items-center gap-2 px-3 py-2.5 rounded-xl border"
               style={{
-                background: "rgba(167, 139, 250, 0.04)",
-                borderColor: "rgba(167, 139, 250, 0.15)"
+                background: llmStatus === "connected"
+                  ? "rgba(167, 139, 250, 0.04)"
+                  : llmStatus === "disconnected"
+                  ? "rgba(239, 68, 68, 0.06)"
+                  : "rgba(107, 114, 128, 0.06)",
+                borderColor: llmStatus === "connected"
+                  ? "rgba(167, 139, 250, 0.15)"
+                  : llmStatus === "disconnected"
+                  ? "rgba(239, 68, 68, 0.2)"
+                  : "rgba(107, 114, 128, 0.15)",
               }}
             >
-              <Zap size={13} style={{ color: "var(--accent)" }} className="animate-pulse" />
-              <span className="text-[11px] font-semibold" style={{ color: "var(--accent)" }}>
-                GCP LLM 연결됨
+              {llmStatus === "checking" && (
+                <Loader2 size={13} className="animate-spin" style={{ color: "#6b7280" }} />
+              )}
+              {llmStatus === "connected" && (
+                <Zap size={13} style={{ color: "var(--accent)" }} className="animate-pulse" />
+              )}
+              {llmStatus === "disconnected" && (
+                <WifiOff size={13} style={{ color: "#ef4444" }} />
+              )}
+              <span
+                className="text-[11px] font-semibold"
+                style={{
+                  color: llmStatus === "connected"
+                    ? "var(--accent)"
+                    : llmStatus === "disconnected"
+                    ? "#ef4444"
+                    : "#6b7280",
+                }}
+              >
+                {llmStatus === "checking" && "연결 확인 중..."}
+                {llmStatus === "connected" && "GCP LLM 연결됨"}
+                {llmStatus === "disconnected" && "LLM 연결 끊김"}
               </span>
             </motion.div>
           )}
