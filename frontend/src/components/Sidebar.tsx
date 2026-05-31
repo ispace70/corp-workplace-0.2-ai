@@ -12,30 +12,41 @@ import {
   Zap,
   WifiOff,
   Loader2,
+  CalendarDays,
+  ClipboardList,
 } from "lucide-react";
 import { RouteMode } from "@/types";
 import { fetchLLMStatus } from "@/lib/api";
 
-/**
- * 네비게이션 메뉴 아이템 정의 인터페이스
- */
 interface MenuItem {
-  id: RouteMode;
+  id: RouteMode | "schedule" | "mywork";
   label: string;
   icon: React.ElementType;
   desc: string;
+  disabled?: boolean;
 }
 
-/**
- * 사이드바 메뉴 항목 데이터
- * 각 모드(자동 라우팅, 지식검색, 데이터분석)를 식별하고 정보를 나타냅니다.
- */
 const MENU_ITEMS: MenuItem[] = [
+  {
+    id: "schedule",
+    label: "일정관리",
+    icon: CalendarDays,
+    desc: "개발중",
+    disabled: true,
+  },
   {
     id: "auto" as RouteMode,
     label: "대시보드",
     icon: LayoutDashboard,
-    desc: "개발중...",
+    desc: "개발중",
+    disabled: true,
+  },
+  {
+    id: "mywork",
+    label: "My업무관리",
+    icon: ClipboardList,
+    desc: "개발중",
+    disabled: true,
   },
   {
     id: "knowledge" as RouteMode,
@@ -126,28 +137,34 @@ export default function Sidebar({ activeMode, onModeChange }: SidebarProps) {
         {MENU_ITEMS.map((item) => {
           const Icon = item.icon;
           const active = activeMode === item.id;
+          const disabled = item.disabled;
           return (
             <button
               key={item.id}
-              onClick={() => onModeChange(item.id)}
+              onClick={() => !disabled && onModeChange(item.id as RouteMode)}
+              disabled={disabled}
               className="w-full flex items-center gap-3.5 px-3 py-3 rounded-xl transition-all duration-200 text-left group relative overflow-hidden"
               style={{
                 background: active ? "var(--accent-dim)" : "transparent",
                 border: `1px solid ${active ? "var(--border-accent)" : "transparent"}`,
-                color: active ? "var(--text-primary)" : "var(--text-secondary)",
+                color: active ? "var(--text-primary)" : disabled ? "var(--text-muted)" : "var(--text-secondary)",
+                cursor: disabled ? "not-allowed" : "pointer",
+                opacity: disabled ? 0.6 : 1,
               }}
             >
               {/* 호버 시 은은한 배경 흐름 효과 */}
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                style={{ background: "rgba(255, 255, 255, 0.02)" }}
-              />
+              {!disabled && (
+                <div
+                  className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  style={{ background: "rgba(255, 255, 255, 0.02)" }}
+                />
+              )}
               <Icon
                 size={18}
                 className="transition-transform group-hover:scale-105 duration-200"
                 style={{
                   flexShrink: 0,
-                  color: active ? "var(--accent)" : "var(--text-secondary)"
+                  color: active ? "var(--accent)" : disabled ? "var(--text-muted)" : "var(--text-secondary)"
                 }}
               />
               <AnimatePresence>
@@ -158,7 +175,21 @@ export default function Sidebar({ activeMode, onModeChange }: SidebarProps) {
                     exit={{ opacity: 0, x: -4 }}
                     className="overflow-hidden"
                   >
-                    <p className="text-sm font-semibold leading-none mb-1">{item.label}</p>
+                    <div className="flex items-center gap-1.5 mb-1">
+                      <p className="text-sm font-semibold leading-none">{item.label}</p>
+                      {disabled && (
+                        <span
+                          className="text-[9px] font-bold px-1.5 py-0.5 rounded-full leading-none"
+                          style={{
+                            background: "rgba(107,114,128,0.15)",
+                            border: "1px solid rgba(107,114,128,0.25)",
+                            color: "#6b7280",
+                          }}
+                        >
+                          개발중
+                        </span>
+                      )}
+                    </div>
                     <p className="text-[11px] leading-none" style={{ color: "var(--text-secondary)" }}>
                       {item.desc}
                     </p>
