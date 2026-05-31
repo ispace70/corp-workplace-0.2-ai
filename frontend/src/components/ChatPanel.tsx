@@ -24,8 +24,8 @@ interface ChatPanelProps {
   setIsLoading: (v: boolean) => void;
   /** 소스 문서 클릭 시 호출되는 콜백 (스플릿 패널 오픈용) */
   onSourceClick: (src: Source) => void;
-  /** SQL 실행 결과 수신 시 호출되는 콜백 (스플릿 패널 오픈용) */
-  onSqlResult: (result: SqlResult) => void;
+  /** SQL 실행 결과 수신 시 호출되는 콜백 (스플릿 패널 오픈용, sql은 실행된 쿼리) */
+  onSqlResult: (result: SqlResult, sql: string) => void;
 }
 
 // 고유한 메시지 ID 생성을 위한 카운터 변수
@@ -123,7 +123,7 @@ export default function ChatPanel({
         onSqlResult: (result) => {
           // SQL 실행 결과 바인딩 및 상세 패널 오픈
           updateAiMessage(aiId, () => ({ sqlResult: result }));
-          onSqlResult(result);
+          onSqlResult(result, "");
         },
         onDone: () => {
           // 스트리밍 종료 처리
@@ -160,7 +160,7 @@ export default function ChatPanel({
         },
         onSqlResult: (result) => {
           updateAiMessage(execId, () => ({ sqlResult: result }));
-          onSqlResult(result);
+          onSqlResult(result, sql);
         },
         onSqlReview: (newSql) => {
           updateAiMessage(execId, () => ({ sqlReview: newSql }));

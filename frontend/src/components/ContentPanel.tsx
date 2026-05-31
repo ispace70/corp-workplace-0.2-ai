@@ -1,38 +1,32 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, FileText, Database, Table, AlertCircle } from "lucide-react";
+import {
+  X, FileText, Database, Table, AlertCircle,
+  Download, Play, ChevronLeft, ChevronRight, Code2,
+} from "lucide-react";
 import { Source, SqlResult } from "@/types";
 
-/**
- * ContentPanel 컴포넌트의 Property 명세
- */
 interface ContentPanelProps {
-  /** 현재 선택되어 세부 내용을 보여줄 문서 출처 정보 */
   selectedSource?: Source | null;
-  /** 현재 렌더링할 SQL 실행 결과 데이터 */
   sqlResult?: SqlResult | null;
-  /** 패널 닫기 버튼 클릭 시 호출될 콜백 함수 */
+  currentSql?: string;
+  onReExecute?: (sql: string) => void;
+  isReExecuting?: boolean;
   onClose?: () => void;
 }
 
-/**
- * SourceView 컴포넌트
- * 사용자가 특정 문서 출처 칩을 선택했을 때 해당 문서의 제목, 페이지, 본문 콘텐츠를 세련된 어두운 카드 형태로 렌더링합니다.
- */
 function SourceView({ source, onClose }: { source: Source; onClose?: () => void }) {
   return (
     <div className="flex flex-col h-full bg-transparent">
-      {/* 문서 상세 헤더 바 */}
       <div
         className="flex items-center justify-between px-5 py-4 border-b backdrop-blur-md bg-opacity-30"
         style={{ borderColor: "rgba(255, 255, 255, 0.06)", background: "rgba(10, 10, 15, 0.4)" }}
       >
         <div className="flex items-center gap-2.5">
           <FileText size={16} className="text-violet-400" />
-          <span className="text-sm font-semibold tracking-wide text-gray-200">
-            문서 원본 뷰어
-          </span>
+          <span className="text-sm font-semibold tracking-wide text-gray-200">문서 원본 뷰어</span>
         </div>
         {onClose && (
           <motion.button
@@ -41,22 +35,15 @@ function SourceView({ source, onClose }: { source: Source; onClose?: () => void 
             onClick={onClose}
             className="p-1 rounded-lg hover:bg-white/5 transition-colors"
             style={{ color: "var(--text-secondary)" }}
-            aria-label="닫기"
           >
             <X size={18} />
           </motion.button>
         )}
       </div>
-
-      {/* 스크롤 가능한 본문 영역 */}
       <div className="flex-1 overflow-y-auto p-5 space-y-4 custom-scrollbar">
-        {/* 출처/페이지 요약 메타 정보 카드 */}
         <div
           className="rounded-xl px-4 py-3 text-xs flex flex-wrap gap-x-4 gap-y-1.5"
-          style={{
-            background: "rgba(139, 92, 246, 0.08)",
-            border: "1px solid rgba(139, 92, 246, 0.2)",
-          }}
+          style={{ background: "rgba(139, 92, 246, 0.08)", border: "1px solid rgba(139, 92, 246, 0.2)" }}
         >
           <div>
             <span className="text-violet-300 font-semibold mr-1.5">출처:</span>
@@ -69,8 +56,6 @@ function SourceView({ source, onClose }: { source: Source; onClose?: () => void 
             </div>
           )}
         </div>
-
-        {/* 본문 텍스트 영역 */}
         <div
           className="rounded-xl p-4.5 text-[13.5px] leading-relaxed shadow-inner"
           style={{
@@ -87,23 +72,67 @@ function SourceView({ source, onClose }: { source: Source; onClose?: () => void 
   );
 }
 
-/**
- * SqlResultView 컴포넌트
- * 자연어 질의를 변환하여 실행한 SQL 결과 데이터를 표(Table) 형식으로 보여줍니다.
- */
-function SqlResultView({ result, onClose }: { result: SqlResult; onClose?: () => void }) {
+const ROWS_PER_PAGE = 20;
+
+function SqlResultView({
+  result,
+  currentSql,
+  onReExecute,
+  isReExecuting,
+  onClose,
+}: {
+  result: SqlResult;
+  currentSql?: string;
+  onReExecute?: (sql: string) => void;
+  isReExecuting?: boolean;
+  onClose?: () => void;
+}) {
+  const [page, setPage] = useState(1);
+  const [sqlOpen, setSqlOpen] = useState(false);
+  const [editedSql, setEditedSql] = useState(currentSql ?? "");
+
+  // 새 결과가 오면 페이지 1로 리셋
+  useEffect(() => {
+    setPage(1);
+  }, [result]);
+
+  // 외부에서 SQL이 바뀌면 동기화
+  useEffect(() => {
+    setEditedSql(currentSql ?? "");
+  }, [currentSql]);
+
+  const totalPages = Math.max(1, Math.ceil(result.rows.length / ROWS_PER_PAGE));
+  const visibleRows = result.rows.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
+
+  const downloadCsv = () => {
+    const header = result.columns.join(",");
+    const rows = result.rows
+      .map((row) =>
+        row.map((cell) => `"${String(cell ?? "").replace(/"/g, '""')}"`).join(",")
+      )
+      .join("\n");
+    // BOM(﻿) 추가 → 엑셀 한글 깨짐 방지
+    const blob = new Blob(["﻿" + header + "\n" + rows], {
+      type: "text/csv;charset=utf-8;",
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "result.csv";
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <div className="flex flex-col h-full bg-transparent">
-      {/* SQL 결과 헤더 바 */}
+      {/* 헤더 */}
       <div
-        className="flex items-center justify-between px-5 py-4 border-b backdrop-blur-md bg-opacity-30"
+        className="flex items-center justify-between px-5 py-4 border-b backdrop-blur-md"
         style={{ borderColor: "rgba(255, 255, 255, 0.06)", background: "rgba(10, 10, 15, 0.4)" }}
       >
         <div className="flex items-center gap-2.5">
           <Table size={16} className="text-emerald-400" />
-          <span className="text-sm font-semibold tracking-wide text-gray-200">
-            데이터 쿼리 분석 결과
-          </span>
+          <span className="text-sm font-semibold tracking-wide text-gray-200">데이터 쿼리 분석 결과</span>
           <span
             className="text-[10px] font-bold px-2 py-0.5 rounded-full"
             style={{
@@ -115,21 +144,103 @@ function SqlResultView({ result, onClose }: { result: SqlResult; onClose?: () =>
             {result.row_count} ROWS
           </span>
         </div>
-        {onClose && (
+        <div className="flex items-center gap-2">
+          {/* SQL 수정 토글 */}
+          {currentSql && (
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => setSqlOpen((v) => !v)}
+              className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+              style={{
+                background: sqlOpen ? "rgba(167,139,250,0.12)" : "rgba(255,255,255,0.04)",
+                border: `1px solid ${sqlOpen ? "rgba(167,139,250,0.3)" : "rgba(255,255,255,0.08)"}`,
+                color: sqlOpen ? "#a78bfa" : "var(--text-secondary)",
+              }}
+            >
+              <Code2 size={12} />
+              SQL 수정
+            </motion.button>
+          )}
+          {/* CSV 저장 */}
           <motion.button
-            whileHover={{ scale: 1.1, rotate: 90 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={onClose}
-            className="p-1 rounded-lg hover:bg-white/5 transition-colors"
-            style={{ color: "var(--text-secondary)" }}
-            aria-label="닫기"
+            whileHover={{ scale: 1.03 }}
+            whileTap={{ scale: 0.97 }}
+            onClick={downloadCsv}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-all"
+            style={{
+              background: "rgba(52,211,153,0.08)",
+              border: "1px solid rgba(52,211,153,0.2)",
+              color: "#34d399",
+            }}
           >
-            <X size={18} />
+            <Download size={12} />
+            CSV 저장
           </motion.button>
-        )}
+          {onClose && (
+            <motion.button
+              whileHover={{ scale: 1.1, rotate: 90 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={onClose}
+              className="p-1 rounded-lg hover:bg-white/5 transition-colors"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              <X size={18} />
+            </motion.button>
+          )}
+        </div>
       </div>
 
-      {/* 표 형식의 결과 영역 */}
+      {/* SQL 수정/재실행 패널 */}
+      <AnimatePresence>
+        {sqlOpen && (
+          <motion.div
+            initial={{ height: 0, opacity: 0 }}
+            animate={{ height: "auto", opacity: 1 }}
+            exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="overflow-hidden border-b"
+            style={{ borderColor: "rgba(167,139,250,0.15)" }}
+          >
+            <div className="p-4 space-y-2" style={{ background: "rgba(10,10,20,0.5)" }}>
+              <textarea
+                value={editedSql}
+                onChange={(e) => setEditedSql(e.target.value)}
+                className="w-full rounded-lg p-3 text-[12px] font-mono leading-relaxed outline-none resize-none"
+                style={{
+                  background: "rgba(0,0,0,0.3)",
+                  border: "1px solid rgba(167,139,250,0.2)",
+                  color: "#a78bfa",
+                  minHeight: 100,
+                  maxHeight: 220,
+                }}
+                spellCheck={false}
+              />
+              <div className="flex justify-end">
+                <motion.button
+                  whileHover={!isReExecuting ? { scale: 1.03 } : {}}
+                  whileTap={!isReExecuting ? { scale: 0.97 } : {}}
+                  onClick={() => onReExecute?.(editedSql)}
+                  disabled={isReExecuting || !editedSql.trim()}
+                  className="flex items-center gap-1.5 text-xs font-bold px-4 py-2 rounded-xl transition-all"
+                  style={{
+                    background: isReExecuting
+                      ? "rgba(255,255,255,0.05)"
+                      : "linear-gradient(135deg, #34d399, #059669)",
+                    color: isReExecuting ? "var(--text-secondary)" : "#fff",
+                    cursor: isReExecuting ? "not-allowed" : "pointer",
+                  }}
+                >
+                  <Play size={12} fill={isReExecuting ? "none" : "currentColor"} />
+                  {isReExecuting ? "실행 중..." : "재실행"}
+                </motion.button>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 결과 테이블 */}
       <div className="flex-1 overflow-auto p-5 custom-scrollbar">
         {result.columns.length > 0 ? (
           <div className="rounded-xl overflow-hidden border border-white/5 shadow-2xl">
@@ -137,18 +248,15 @@ function SqlResultView({ result, onClose }: { result: SqlResult; onClose?: () =>
               <thead>
                 <tr className="bg-white/[0.03] border-b border-white/10 text-gray-300 font-semibold">
                   {result.columns.map((col) => (
-                    <th key={col} className="px-4 py-3 font-medium uppercase tracking-wider">
+                    <th key={col} className="px-4 py-3 font-medium uppercase tracking-wider whitespace-nowrap">
                       {col}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody className="divide-y divide-white/[0.04] text-gray-400">
-                {result.rows.map((row, i) => (
-                  <tr
-                    key={i}
-                    className="hover:bg-white/[0.02] transition-colors"
-                  >
+                {visibleRows.map((row, i) => (
+                  <tr key={i} className="hover:bg-white/[0.02] transition-colors">
                     {row.map((cell, j) => (
                       <td key={j} className="px-4 py-3 whitespace-nowrap">
                         {cell === null ? (
@@ -170,14 +278,57 @@ function SqlResultView({ result, onClose }: { result: SqlResult; onClose?: () =>
           </div>
         )}
       </div>
+
+      {/* 페이지 네비게이션 */}
+      {totalPages > 1 && (
+        <div
+          className="flex items-center justify-between px-5 py-3 border-t flex-shrink-0"
+          style={{ borderColor: "rgba(255,255,255,0.06)", background: "rgba(10,10,15,0.3)" }}
+        >
+          <span className="text-[11px]" style={{ color: "var(--text-muted)" }}>
+            {(page - 1) * ROWS_PER_PAGE + 1}–{Math.min(page * ROWS_PER_PAGE, result.row_count)} / {result.row_count}행
+          </span>
+          <div className="flex items-center gap-2">
+            <motion.button
+              whileHover={page > 1 ? { scale: 1.05 } : {}}
+              whileTap={page > 1 ? { scale: 0.95 } : {}}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: page <= 1 ? "var(--text-muted)" : "var(--text-secondary)",
+                cursor: page <= 1 ? "not-allowed" : "pointer",
+              }}
+            >
+              <ChevronLeft size={12} /> 이전
+            </motion.button>
+            <span className="text-[11px] font-bold px-2" style={{ color: "var(--accent)" }}>
+              {page} / {totalPages}
+            </span>
+            <motion.button
+              whileHover={page < totalPages ? { scale: 1.05 } : {}}
+              whileTap={page < totalPages ? { scale: 0.95 } : {}}
+              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+              disabled={page >= totalPages}
+              className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[11px] font-semibold transition-all"
+              style={{
+                background: "rgba(255,255,255,0.04)",
+                border: "1px solid rgba(255,255,255,0.08)",
+                color: page >= totalPages ? "var(--text-muted)" : "var(--text-secondary)",
+                cursor: page >= totalPages ? "not-allowed" : "pointer",
+              }}
+            >
+              다음 <ChevronRight size={12} />
+            </motion.button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
-/**
- * EmptyState 컴포넌트
- * 선택된 소스나 쿼리 데이터 결과가 없을 때 보여주는 기본 안내 화면입니다.
- */
 function EmptyState() {
   return (
     <div className="flex flex-col items-center justify-center h-full gap-4 text-center px-6 bg-gradient-to-b from-transparent to-white/[0.01]">
@@ -193,11 +344,9 @@ function EmptyState() {
         <Database size={24} className="text-violet-400" />
       </motion.div>
       <div>
-        <p className="text-sm font-semibold tracking-wide text-gray-200">
-          콘텐츠 상세 뷰어
-        </p>
+        <p className="text-sm font-semibold tracking-wide text-gray-200">콘텐츠 상세 뷰어</p>
         <p className="text-xs leading-relaxed mt-2 text-gray-400 max-w-[240px] mx-auto">
-          AI 응답의 <span className="text-violet-300 font-semibold">출처 문서 칩</span>을 클릭하시거나 
+          AI 응답의 <span className="text-violet-300 font-semibold">출처 문서 칩</span>을 클릭하시거나
           SQL 분석을 성공하면 결과 테이블이 여기에 표출됩니다.
         </p>
       </div>
@@ -205,12 +354,14 @@ function EmptyState() {
   );
 }
 
-/**
- * ContentPanel 컴포넌트
- * 화면 우측 분할 영역에 실시간 상세 정보(문서 원본 내용 또는 SQL 쿼리 실행 표 데이터)를 노출하며,
- * 정보가 없을 때 안내 문구를 출력합니다.
- */
-export default function ContentPanel({ selectedSource, sqlResult, onClose }: ContentPanelProps) {
+export default function ContentPanel({
+  selectedSource,
+  sqlResult,
+  currentSql,
+  onReExecute,
+  isReExecuting,
+  onClose,
+}: ContentPanelProps) {
   return (
     <div
       className="flex flex-col h-full glass transition-all"
@@ -237,7 +388,13 @@ export default function ContentPanel({ selectedSource, sqlResult, onClose }: Con
             transition={{ duration: 0.2 }}
             className="h-full"
           >
-            <SqlResultView result={sqlResult} onClose={onClose} />
+            <SqlResultView
+              result={sqlResult}
+              currentSql={currentSql}
+              onReExecute={onReExecute}
+              isReExecuting={isReExecuting}
+              onClose={onClose}
+            />
           </motion.div>
         ) : (
           <motion.div
@@ -254,4 +411,3 @@ export default function ContentPanel({ selectedSource, sqlResult, onClose }: Con
     </div>
   );
 }
-
