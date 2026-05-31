@@ -5,6 +5,9 @@
 [Database Context]
 아래 스키마와 코드맵에 정의된 테이블과 컬럼, ENUM 값만 사용해야 합니다. 절대 존재하지 않는 요소를 지어내지 마십시오 (환각 금지).
 
+## 스키마
+{schema}
+{codemap_section}{fewshot_section}
 
 [Strict Rules]
 1. No Explanation: 생각 과정이나 부연 설명 없이 오직 SQL 쿼리만 반환하세요. 반드시 ```sql ... ``` 블록으로 감싸세요.
